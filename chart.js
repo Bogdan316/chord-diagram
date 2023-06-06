@@ -26,33 +26,34 @@ var chord = d3.chord()
     // .padAngle(0.1)
     (matrix)
 
-svg.datum(chord)
-    .append("g")
-    .selectAll("path")
-    .data((d) => d)
-    .enter()
-    .append("path")
-    .style("fill", "cornflowerblue")
-    .style("stroke", "black")
-    .attr("d", d3.ribbon().radius(400))
-    .append("title")
-    .text(d => `${d.source.value} → ${d.target.value}`)
+// svg.datum(chord)
+//     .append("g")
+//     .selectAll("path")
+//     .data((d) => d)
+//     .enter()
+//     .append("path")
+//     .style("fill", "cornflowerblue")
+//     .style("stroke", "black")
+//     .attr("d", d3.ribbon().radius(400))
+//     .append("title")
+//     .text(d => `${d.source.value} → ${d.target.value}`)
 
 
 const treeData = [
     [
-        { "name": "5", "parent": "" },
-        { "name": "3", "parent": "5" },
+        { "name": "10", "parent": "" },
+
+        { "name": "5", "parent": "10" },
+        { "name": "6", "parent": "5" },
         { "name": "4", "parent": "5" },
-        { "name": "0", "parent": "3" },
-        { "name": "1", "parent": "3" },
+        { "name": "0", "parent": "6" },
+        { "name": "1", "parent": "6" },
         { "name": "2", "parent": "4" },
-    ],
-    [
-        { "name": "6", "parent": "" },
-        { "name": "5", "parent": "6" },
-        { "name": "4", "parent": "5" },
-        { "name": "3", "parent": "4" },
+
+        { "name": "7", "parent": "10" },
+        { "name": "8", "parent": "7" },
+        { "name": "9", "parent": "8" },
+        { "name": "3", "parent": "9" },
     ],
 ];
 
@@ -97,10 +98,10 @@ const bfs = function (tree, groups) {
 
     let brightenAmount = (0.85 - 0.2) / tree.height;
     console.log(tree.height);
-    
+
     while (q.length !== 0) {
         const node = q.shift();
-        
+
 
         svg.datum(chord)
             .append("g")
@@ -120,7 +121,7 @@ const bfs = function (tree, groups) {
             for (const child of node.children) {
 
                 child.color = child.parent.color.brighter(brightenAmount);
-                
+
                 if (!child.visited) {
                     child.visited = true;
                     q.push(child);
@@ -134,15 +135,76 @@ var root = d3.stratify()
     .id(d => d.name)
     .parentId(d => d.parent)
     (treeData[0]);
-bfs(root, chord.groups);
+bfs(root.children[0], chord.groups);
+
+bfs(root.children[1], chord.groups);
+
+var cluster = d3.cluster()
+    .size([360, 400]);
+
+cluster(root);
+
+root.leaves().forEach(
+    (leaf, idx) => {
+        const group = chord.groups[idx];
+        leaf.x = ((group.startAngle + group.endAngle) / 2) * (180 / Math.PI);
+    }
+)
+
+var bubble = svg.append("g").selectAll("g");
 
 
+// bubble = bubble
+//     .data(root.leaves())
+//     .enter().append("circle")
+//     .attr("class", "bubble")
+//     .attr("transform", function (d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 10) + ",0)" })
+//     .attr('r', d => 20)
+//     .attr('stroke', 'black')
+//     .attr('fill', 'red')
+//     .style('opacity', .2)
 
-var root = d3.stratify()
-    .id(d => d.name)
-    .parentId(d => d.parent)
-    (treeData[1]);
-bfs(root, chord.groups);
+root.leaves().forEach(l => l.data.imports = ["0", "1", "2", "3"]);
+
+var line = d3.lineRadial()
+    .curve(d3.curveBundle.beta(0.85))
+    .radius(function (d) { return d.y; })
+    .angle(function (d) { return d.x / 180 * Math.PI; });
+
+let link = svg.append("g").selectAll("g");
+
+link = link
+    .data(packageImports(root.leaves()))
+    .enter().append("path")
+    .each(function (d) { 
+        // d[0].x -= 10;
+        d.source = d[0]; 
+        d.target = d[d.length - 1]; 
+        console.log(d[0], d[d.length - 1]);
+    })
+    .attr("d", line)
+    .attr("fill", "none")
+    .style("stroke", "cornflowerblue");
+
+// Return a list of imports for the given array of nodes.
+function packageImports(nodes) {
+    var map = {},
+        imports = [];
+
+    // Compute a map from name to node.
+    nodes.forEach(function (d) {
+        map[d.data.name] = d;
+    });
+
+    // For each import, construct a link from the source to target node.
+    nodes.forEach(function (d) {
+        if (d.data.imports) d.data.imports.forEach(function (i) {
+            imports.push(map[d.data.name].path(map[i]));
+        });
+    });
+
+    return imports;
+}
 
 // gradient
 // linii, vazut valoarea (importanta)
