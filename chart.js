@@ -2,6 +2,14 @@ import * as d3 from "d3"
 
 const RADIUS = 400;
 
+const ARC_THICKNESS = 15;
+
+const WIDTH = window.innerWidth;
+
+const HEIGHT = window.innerHeight;
+
+const tooltip = d3.select("#tooltip");
+
 const adjacencyMatrix = [
     [0, 0, 0, 5, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 2, 0],
@@ -60,10 +68,10 @@ leaves.forEach((l, idx) => l.idx = idx);
 
 const svg = d3.select("#chart")
     .append("svg")
-    .attr("width", window.innerWidth)
-    .attr("height", window.innerHeight)
+    .attr("width", WIDTH)
+    .attr("height", HEIGHT)
     .append("g")
-    .attr("transform", `translate(${window.innerWidth / 2}, ${window.innerHeight / 2})`)
+    .attr("transform", `translate(${WIDTH / 2}, ${HEIGHT / 2})`)
 
 const chord = d3.chord()
     // .sortSubgroups(d3.ascending)
@@ -103,6 +111,31 @@ const updateAngles = function (groups) {
     }
 }
 
+
+function onMouseEneter(event, datum) {
+    tooltip.select("#count").text(datum.data.name);
+
+    // the circle starts from the top not from the right, the equations need to be adjusted
+    const arcAngle = datum.startAngle + (datum.endAngle - datum.startAngle) / 2 + 3 * Math.PI / 2;
+    const radius = RADIUS  + datum.height * ARC_THICKNESS;
+    const xCoord = WIDTH / 2 + radius * Math.cos(arcAngle);
+    const yCoord = HEIGHT / 2 + radius * Math.sin(arcAngle)
+    console.log(radius);
+
+    // console.log(datum);
+    // move and center tooltip 
+    tooltip.style("transform", `translate(${xCoord}px, ${yCoord}px)`);
+
+    tooltip.style("opacity", 1);
+}
+
+
+function onMouseLeave(event, datum) {
+    tooltip.style("opacity", 0);
+}
+
+const arcs = svg.append("g");
+
 const arcsColorScale = d3.scaleSequential()
     .domain([0, classHierarchy.children.length - 1])
     .interpolator(d3.interpolateCool)
@@ -122,19 +155,20 @@ const drawArcs = function (tree, chord, color) {
     while (q.length !== 0) {
         const node = q.shift();
 
-        svg.datum(chord)
-            .append("g")
-            .selectAll("g")
-            .data(chord.groups)
-            .enter()
-            .append("g").append("path")
+        const currentArc = arcs
+            .datum(node)
+            .append("path")
+            .attr("class", "arc")
             .style("fill", node.color)
             .style("stroke", "white")
             .attr("d", d3.arc()
-                .innerRadius(RADIUS + node.height * 15)
-                .outerRadius(RADIUS + (node.height + 1) * 15)
+                .innerRadius(RADIUS + node.height * ARC_THICKNESS)
+                .outerRadius(RADIUS + (node.height + 1) * ARC_THICKNESS)
                 .startAngle(node.startAngle)
-                .endAngle(node.endAngle));
+                .endAngle(node.endAngle)
+            )
+            .on("mouseenter", onMouseEneter)
+            .on("mouseleave", onMouseLeave);
 
         if (node.children) {
             for (const child of node.children) {
@@ -193,7 +227,7 @@ const link = svg.append("g").selectAll("g")
     })
     .attr("d", line)
     .attr("fill", "none")
-    .style("stroke",  d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
+    .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
     .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
 // Return a list of imports for the given array of nodes.
