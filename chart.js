@@ -61,13 +61,13 @@ var classHierarchy = d3.stratify()
 const leaves = classHierarchy.leaves();
 leaves.forEach((l, idx) => l.idx = idx);
 
-
 const svg = d3.select("#chart")
     .append("svg")
     .attr("width", WIDTH)
     .attr("height", HEIGHT)
     .append("g")
-    .attr("transform", `translate(${WIDTH / 2}, ${HEIGHT / 2})`)
+    .attr("transform", `translate(${WIDTH / 2}, ${HEIGHT / 2})`);
+
 
 const chord = d3.chord()
     // .sortSubgroups(d3.ascending)
@@ -125,7 +125,21 @@ function onMouseEneter(event, datum) {
 function onMouseDown(event, datum) {
     const paths = datum.leaves().flatMap(l => l.paths);
     const otherPaths = new Set(leaves.flatMap(l => l.paths).filter(p => !paths.includes(p)));
-    otherPaths.forEach(p => d3.select(p).style("stroke", "lightgrey"));
+    paths.forEach(p => {
+        if (p.oldStroke) {
+            d3.select(p)
+                .style("stroke", p.oldStroke)
+                .style("opacity", 1);
+        }
+    });
+    otherPaths.forEach(p => {
+        if (!p.oldStroke) {
+            p.oldStroke = p.style.stroke;
+        }
+        d3.select(p)
+            .style("stroke", "darkgrey")
+            .style("opacity", 0.2);
+    });
 }
 
 function onMouseLeave(event, datum) {
