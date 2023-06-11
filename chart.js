@@ -23,14 +23,10 @@ const adjacencyMatrix = [
 
 
 const adjacencyList = {
-    "ClassAAA": ["ClassBAA"],
     "ClassABA": ["ClassCA"],
     "ClassABB": ["ClassBCA"],
     "ClassBAA": ["ClassAAA", "ClassCA"],
     "ClassBBA": ["ClassCB"],
-    "ClassBCA": ["ClassABB"],
-    "ClassCA": ["ClassABA", "ClassBAA"],
-    "ClassCB": ["ClassBBA"]
 }
 
 const classHierarchyJson =
@@ -113,22 +109,24 @@ const updateAngles = function (groups) {
 
 
 function onMouseEneter(event, datum) {
-    tooltip.select("#count").text(datum.data.name);
+    tooltip.select("#class-name").text(datum.data.name);
 
     // the circle starts from the top not from the right, the equations need to be adjusted
     const arcAngle = datum.startAngle + (datum.endAngle - datum.startAngle) / 2 + 3 * Math.PI / 2;
-    const radius = RADIUS  + datum.height * ARC_THICKNESS;
+    const radius = RADIUS + datum.height * ARC_THICKNESS;
     const xCoord = WIDTH / 2 + radius * Math.cos(arcAngle);
     const yCoord = HEIGHT / 2 + radius * Math.sin(arcAngle)
-    console.log(radius);
 
-    // console.log(datum);
-    // move and center tooltip 
     tooltip.style("transform", `translate(${xCoord}px, ${yCoord}px)`);
 
     tooltip.style("opacity", 1);
 }
 
+function onMouseDown(event, datum) {
+    const paths = datum.leaves().flatMap(l => l.paths);
+    const otherPaths = new Set(leaves.flatMap(l => l.paths).filter(p => !paths.includes(p)));
+    otherPaths.forEach(p => d3.select(p).style("stroke", "lightgrey"));
+}
 
 function onMouseLeave(event, datum) {
     tooltip.style("opacity", 0);
@@ -168,7 +166,8 @@ const drawArcs = function (tree, chord, color) {
                 .endAngle(node.endAngle)
             )
             .on("mouseenter", onMouseEneter)
-            .on("mouseleave", onMouseLeave);
+            .on("mouseleave", onMouseLeave)
+            .on("mousedown", onMouseDown);
 
         if (node.children) {
             for (const child of node.children) {
@@ -223,17 +222,25 @@ const link = svg.append("g").selectAll("g")
     .append("path")
     .each(function (d) {
         d.source = d[0];
+        d.source.paths = [];
+
         d.target = d[d.length - 1];
+        d.target.paths = [];
     })
     .attr("d", line)
+    .each(function (d) {
+        d.source.paths.push(this);
+        d.target.paths.push(this);
+    })
     .attr("fill", "none")
     .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
     .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
+// console.log(d3.select(leaves[0].paths[0]).style("stroke", "green"));
+
 // Return a list of imports for the given array of nodes.
 function constructClassLinks(nodes) {
-    var map = {},
-        imports = [];
+    const map = {}, imports = [];
 
     // Compute a map from name to node.
     nodes.forEach(function (d) {
