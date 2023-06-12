@@ -123,8 +123,11 @@ function onMouseEneter(event, datum) {
 }
 
 function onMouseDown(event, datum) {
+    const lastArc = localStorage.getItem("lastClickedArc");
+
     const paths = datum.leaves().flatMap(l => l.paths);
     const otherPaths = new Set(leaves.flatMap(l => l.paths).filter(p => !paths.includes(p)));
+
     paths.forEach(p => {
         if (p.oldStroke) {
             d3.select(p)
@@ -132,14 +135,28 @@ function onMouseDown(event, datum) {
                 .style("opacity", 1);
         }
     });
+
+    console.log(lastArc)
+
     otherPaths.forEach(p => {
         if (!p.oldStroke) {
             p.oldStroke = p.style.stroke;
         }
+
+        let newStroke = "darkgrey";
+        let newOpacity = 0.2
+
+        if (p.style.stroke == newStroke && lastArc === datum.data.name) {
+            newStroke = p.oldStroke;
+            newOpacity = 1;
+        }
+
         d3.select(p)
-            .style("stroke", "darkgrey")
-            .style("opacity", 0.2);
+            .style("stroke", newStroke)
+            .style("opacity", newOpacity);
     });
+
+    localStorage.setItem("lastClickedArc", datum.data.name);
 }
 
 function onMouseLeave(event, datum) {
@@ -167,8 +184,7 @@ const drawArcs = function (tree, chord, color) {
     while (q.length !== 0) {
         const node = q.shift();
 
-        const currentArc = arcs
-            .datum(node)
+        arcs.datum(node)
             .append("path")
             .attr("class", "arc")
             .style("fill", node.color)
@@ -182,6 +198,7 @@ const drawArcs = function (tree, chord, color) {
             .on("mouseenter", onMouseEneter)
             .on("mouseleave", onMouseLeave)
             .on("mousedown", onMouseDown);
+
 
         if (node.children) {
             for (const child of node.children) {
