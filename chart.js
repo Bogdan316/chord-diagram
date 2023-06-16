@@ -1,5 +1,3 @@
-// import * as d3 from "d3"
-
 const RADIUS = 400;
 
 const ARC_THICKNESS = 15;
@@ -10,55 +8,6 @@ const HEIGHT = window.innerHeight;
 
 const tooltip = d3.select("#tooltip");
 
-const adjacencyMatrix = [
-    [0, 0, 0, 5, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 2, 0],
-    [0, 0, 0, 0, 0, 3, 0, 0],
-    [5, 0, 0, 0, 0, 0, 7, 0],
-    [0, 0, 0, 0, 0, 0, 0, 4],
-    [0, 0, 3, 0, 0, 0, 0, 0],
-    [0, 2, 0, 7, 0, 0, 0, 0],
-    [0, 0, 0, 0, 4, 0, 0, 0],
-];
-
-
-const adjacencyList = {
-    "ClassABA": ["ClassCA"],
-    "ClassABB": ["ClassBCA"],
-    "ClassBAA": ["ClassAAA", "ClassCA"],
-    "ClassBBA": ["ClassCB"],
-}
-
-const classHierarchyJson =
-    [
-        { "name": "Object", "parent": "" },
-
-        { "name": "ClassA", "parent": "Object" },
-        { "name": "ClassAA", "parent": "ClassA" },
-        { "name": "ClassAB", "parent": "ClassA" },
-        { "name": "ClassAAA", "parent": "ClassAA" },
-        { "name": "ClassABA", "parent": "ClassAB" },
-        { "name": "ClassABB", "parent": "ClassAB" },
-
-        { "name": "ClassB", "parent": "Object" },
-        { "name": "ClassBA", "parent": "ClassB" },
-        { "name": "ClassBB", "parent": "ClassB" },
-        { "name": "ClassBC", "parent": "ClassB" },
-        { "name": "ClassBAA", "parent": "ClassBA" },
-        { "name": "ClassBBA", "parent": "ClassBB" },
-        { "name": "ClassBCA", "parent": "ClassBC" },
-
-        { "name": "ClassC", "parent": "Object" },
-        { "name": "ClassCA", "parent": "ClassC" },
-        { "name": "ClassCB", "parent": "ClassC" }
-    ];
-
-var classHierarchy = d3.stratify()
-    .id(d => d.name)
-    .parentId(d => d.parent)
-    (classHierarchyJson);
-
-const leaves = classHierarchy.leaves();
 leaves.forEach((l, idx) => l.idx = idx);
 
 const svg = d3.select("#chart")
@@ -107,7 +56,7 @@ const updateAngles = function (groups) {
     }
 }
 
-
+// center and display tooltip on mouse hover
 function onMouseEneter(event, datum) {
     tooltip.select("#class-name").text(datum.data.name);
 
@@ -122,6 +71,13 @@ function onMouseEneter(event, datum) {
     tooltip.style("opacity", 1);
 }
 
+// hide tooltip
+function onMouseLeave(event, datum) {
+    tooltip.style("opacity", 0);
+}
+
+
+// greyout the links that are not selected
 function onMouseDown(event, datum) {
     const lastArc = localStorage.getItem("lastClickedArc");
 
@@ -135,8 +91,6 @@ function onMouseDown(event, datum) {
                 .style("opacity", 1);
         }
     });
-
-    console.log(lastArc)
 
     otherPaths.forEach(p => {
         if (!p.oldStroke) {
@@ -157,10 +111,6 @@ function onMouseDown(event, datum) {
     });
 
     localStorage.setItem("lastClickedArc", datum.data.name);
-}
-
-function onMouseLeave(event, datum) {
-    tooltip.style("opacity", 0);
 }
 
 const arcs = svg.append("g");
@@ -230,8 +180,7 @@ leaves.forEach(
     }
 )
 
-leaves.forEach(l => l.data.imports = adjacencyList[l.id]);
-
+leaves.forEach(l => l.data.imports = adjacencyList.get(l.id));
 const line = d3.lineRadial()
     .curve(d3.curveBundle.beta(0.85))
     .radius(function (d) { return d.y; })
@@ -267,8 +216,6 @@ const link = svg.append("g").selectAll("g")
     .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
     .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
-// console.log(d3.select(leaves[0].paths[0]).style("stroke", "green"));
-
 // Return a list of imports for the given array of nodes.
 function constructClassLinks(nodes) {
     const map = {}, imports = [];
@@ -287,61 +234,3 @@ function constructClassLinks(nodes) {
 
     return imports;
 }
-
-
-// var bubble = svg.append("g").selectAll("g");
-
-// bubble = bubble
-//     .data(leaves)
-//     .enter().append("circle")
-//     .attr("class", "bubble")
-//     .attr("transform", function (d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 10) + ",0)" })
-//     .attr('r', d => 20)
-//     .attr('stroke', 'black')
-//     .attr('fill', 'red')
-//     .style('opacity', .2)
-
-// gradient
-// linii, vazut valoarea (importanta)
-
-
-// colors
-// TODO: generate 
-
-// var randomColor = () => d3.rgb(...hsvToRgb(Math.random(), 0.3, 0.5));
-
-// function hsvToRgb(h, s, v) {
-//     let r, g, b;
-
-//     let h_i = Math.floor(h * 6);
-//     let f = h * 6 - h_i;
-//     let p = v * (1 - s);
-//     let q = v * (1 - f * s);
-//     let t = v * (1 - (1 - f) * s);
-
-//     if (h_i === 0) {
-//         [r, g, b] = [v, t, p];
-//     }
-
-//     if (h_i === 1) {
-//         [r, g, b] = [q, v, p];
-//     }
-
-//     if (h_i === 2) {
-//         [r, g, b] = [p, v, t];
-//     }
-
-//     if (h_i === 3) {
-//         [r, g, b] = [p, q, v];
-//     }
-
-//     if (h_i === 4) {
-//         [r, g, b] = [t, p, v];
-//     }
-
-//     if (h_i === 5) {
-//         [r, g, b] = [v, p, q];
-//     }
-
-//     return [r * 256, g * 256, b * 256].map(Math.floor);
-// }
