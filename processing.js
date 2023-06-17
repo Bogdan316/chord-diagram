@@ -40,8 +40,8 @@ for (i = 0; i < hierarchies.length - 1; i++) {
     hierarchyMap.set(newEdge.name + newEdge.parent, newEdge);
 }
 
-
 const classHierarchyJson = [...hierarchyMap.values()];
+
 
 var classHierarchy = d3.stratify()
     .id(d => d.name)
@@ -52,14 +52,21 @@ const leaves = classHierarchy.leaves();
 
 // create the adjacency matrix use a map to make the mapping between the name of the classes and their indexes
 const leavesMap = new Map();
-leaves.forEach((l, i) => leavesMap.set(l.id, i));
+leaves.forEach((l, i) => {
+    // init list of paths that will be populated later
+    l.paths = [];
+    // map name of leaf to its index
+    leavesMap.set(l.id, i);
+});
 const adjacencyMatrix = new Array(leaves.length).fill().map(() => new Array(leaves.length).fill(0));
 
+// use the mapping from name to index to populate the adjacency matrix
 for (k of pairClientsCount.keys()) {
     const i = leavesMap.get(k);
     const kMap = pairClientsCount.get(k);
     for (p of kMap.keys()) {
         const j = leavesMap.get(p);
-        adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
+        if (i && j)
+            adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
     }
 }

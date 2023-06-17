@@ -202,15 +202,12 @@ const link = svg.append("g").selectAll("g")
     .append("path")
     .each(function (d) {
         d.source = d[0];
-        d.source.paths = [];
-
         d.target = d[d.length - 1];
-        d.target.paths = [];
     })
     .attr("d", line)
     .each(function (d) {
-        d.source.paths.push(this);
-        d.target.paths.push(this);
+            d.source.paths.push(this);
+            d.target.paths.push(this);
     })
     .attr("fill", "none")
     .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
@@ -227,9 +224,11 @@ function constructClassLinks(nodes) {
 
     // For each import, construct a link from the source to target node.
     nodes.forEach(function (d) {
-        if (d.data.imports) d.data.imports.forEach(function (i) {
-            imports.push(map[d.data.name].path(map[i]));
-        });
+        if (d.data.imports) {
+            d.data.imports.forEach(function (i) {
+                imports.push(map[d.data.name].path(map[i]));
+            });
+        }
     });
 
     return imports;
