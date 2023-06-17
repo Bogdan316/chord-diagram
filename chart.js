@@ -1,4 +1,4 @@
-const RADIUS = 400;
+
 
 const ARC_THICKNESS = 15;
 
@@ -9,6 +9,8 @@ const HEIGHT = window.innerHeight;
 const tooltip = d3.select("#tooltip");
 
 leaves.forEach((l, idx) => l.idx = idx);
+
+const RADIUS = WIDTH * 0.2;
 
 const svg = d3.select("#chart")
     .append("svg")
