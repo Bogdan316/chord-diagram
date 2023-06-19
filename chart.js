@@ -190,6 +190,7 @@ const line = d3.lineRadial()
 
 // TODO: change from adjacencyMatrix
 const weightExtend = d3.extent(adjacencyMatrix.flatMap(r => r));
+weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.05;
 
 const linksColorScale = d3.scaleSequential()
     .domain(weightExtend)
