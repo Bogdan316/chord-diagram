@@ -1,5 +1,3 @@
-
-
 const ARC_THICKNESS = 15;
 
 const WIDTH = window.innerWidth;
@@ -18,12 +16,6 @@ const svg = d3.select("#chart")
     .attr("height", HEIGHT)
     .append("g")
     .attr("transform", `translate(${WIDTH / 2}, ${HEIGHT / 2})`);
-
-
-const chord = d3.chord()
-    // .sortSubgroups(d3.ascending)
-    (adjacencyMatrix)
-
 
 /* DRAW ARCS */
 
@@ -115,6 +107,26 @@ function onMouseDown(event, datum) {
     localStorage.setItem("lastClickedArc", datum.data.name);
 }
 
+const cluster = d3.cluster()
+    .size([360, RADIUS]);
+
+cluster(classHierarchy);
+
+const angleAmount = 2 * Math.PI / leaves.length;
+
+leaves.forEach(
+    (leaf, idx) => {
+        leaf.startAngle = idx * angleAmount;
+        leaf.endAngle = (idx + 1) * angleAmount;
+    }
+)
+
+leaves.forEach(
+    (leaf) => {
+        leaf.x = ((leaf.startAngle + leaf.endAngle) / 2) * (180 / Math.PI);
+    }
+)
+
 const arcs = svg.append("g");
 
 const arcsColorScale = d3.scaleSequential()
@@ -123,7 +135,7 @@ const arcsColorScale = d3.scaleSequential()
 
 const drawArcs = function (tree, chord, color) {
     // use bfs to draw arcs for the provided hierarchy
-    updateAngles(chord.groups);
+    updateAngles(chord);
 
     let q = [];
     tree.visited = true;
@@ -166,21 +178,9 @@ const drawArcs = function (tree, chord, color) {
     }
 }
 
-classHierarchy.children.forEach((c, idx) => drawArcs(c, chord, arcsColorScale(idx)))
+classHierarchy.children.forEach((c, idx) => drawArcs(c, leaves, arcsColorScale(idx)))
 
 /* DRAW EDGES */
-
-const cluster = d3.cluster()
-    .size([360, RADIUS]);
-
-cluster(classHierarchy);
-
-leaves.forEach(
-    (leaf, idx) => {
-        const group = chord.groups[idx];
-        leaf.x = ((group.startAngle + group.endAngle) / 2) * (180 / Math.PI);
-    }
-)
 
 leaves.forEach(l => l.data.imports = adjacencyList.get(l.id));
 const line = d3.lineRadial()
@@ -188,6 +188,7 @@ const line = d3.lineRadial()
     .radius(function (d) { return d.y; })
     .angle(function (d) { return d.x / 180 * Math.PI; });
 
+// TODO: change from adjacencyMatrix
 const weightExtend = d3.extent(adjacencyMatrix.flatMap(r => r));
 
 const linksColorScale = d3.scaleSequential()
@@ -208,12 +209,13 @@ const link = svg.append("g").selectAll("g")
     })
     .attr("d", line)
     .each(function (d) {
-            d.source.paths.push(this);
-            d.target.paths.push(this);
+        d.source.paths.push(this);
+        d.target.paths.push(this);
     })
     .attr("fill", "none")
     .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
-    .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
+    .style("stroke-width", 2);
+// .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
 // Return a list of imports for the given array of nodes.
 function constructClassLinks(nodes) {
