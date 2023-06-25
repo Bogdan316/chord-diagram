@@ -94,7 +94,7 @@ function onMouseDown(event, datum) {
         }
 
         let newStroke = "darkgrey";
-        let newOpacity = 0.2
+        let newOpacity = 0;
 
         if (p.style.stroke == newStroke && lastArc === datum.data.name) {
             newStroke = p.oldStroke;
@@ -192,7 +192,7 @@ const line = d3.lineRadial()
 
 // TODO: change from adjacencyMatrix
 const weightExtend = d3.extent(adjacencyMatrix.flatMap(r => r));
-weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.05;
+weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.3;
 
 const linksColorScale = d3.scaleSequential()
     .domain(weightExtend)
