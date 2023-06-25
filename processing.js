@@ -28,19 +28,20 @@ pairs.forEach(p => {
 
 // format the list of classes such that d3.stratify() can create a hierarchy
 // and remove all the duplicated objects, stratify does not support duplicates
-const hierarchyMap = new Map();
-hierarchyMap.set(OBJECT_FQN, { name: OBJECT_FQN, parent: "" });
+// const hierarchyMap = new Map();
+// hierarchyMap.set(OBJECT_FQN, { name: OBJECT_FQN, parent: "" });
 
-for (i = 0; i < hierarchies.length - 1; i++) {
-    if (hierarchies[i] === OBJECT_FQN) {
-        continue;
-    }
+// for (i = 0; i < hierarchies.length - 1; i++) {
+//     if (hierarchies[i] === OBJECT_FQN) {
+//         continue;
+//     }
 
-    const newEdge = { name: hierarchies[i], parent: hierarchies[i + 1] };
-    hierarchyMap.set(newEdge.name + newEdge.parent, newEdge);
-}
+//     const newEdge = { name: hierarchies[i], parent: hierarchies[i + 1] };
+//     hierarchyMap.set(newEdge.name + newEdge.parent, newEdge);
+// }
 
-const classHierarchyJson = [...hierarchyMap.values()];
+
+const classHierarchyJson = hierarchies;
 
 
 var classHierarchy = d3.stratify()
@@ -66,7 +67,11 @@ for (k of pairClientsCount.keys()) {
     const kMap = pairClientsCount.get(k);
     for (p of kMap.keys()) {
         const j = leavesMap.get(p);
-        if (i && j)
+        if (i !== undefined && j != undefined){
             adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
+            console.log(i, j, k, p, kMap.get(p));
+        }
     }
 }
+
+console.log(pairClientsCount);

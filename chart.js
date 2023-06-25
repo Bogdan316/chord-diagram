@@ -1,3 +1,5 @@
+// import * as d3 from "d3"
+
 const ARC_THICKNESS = 15;
 
 const WIDTH = window.innerWidth;
@@ -215,7 +217,7 @@ const link = svg.append("g").selectAll("g")
     })
     .attr("fill", "none")
     .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
-    .style("stroke-width", 2);
+    .style("stroke-width", 0.5);
 // .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
 // Return a list of imports for the given array of nodes.

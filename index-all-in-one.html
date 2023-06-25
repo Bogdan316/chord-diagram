@@ -95,20 +95,21 @@
 
         // format the list of classes such that d3.stratify() can create a hierarchy
         // and remove all the duplicated objects, stratify does not support duplicates
-        const hierarchyMap = new Map();
-        hierarchyMap.set(OBJECT_FQN, { name: OBJECT_FQN, parent: "" });
+        // const hierarchyMap = new Map();
+        // hierarchyMap.set(OBJECT_FQN, { name: OBJECT_FQN, parent: "" });
 
-        for (i = 0; i < hierarchies.length - 1; i++) {
-            if (hierarchies[i] === OBJECT_FQN) {
-                continue;
-            }
+        // for (i = 0; i < hierarchies.length - 1; i++) {
+        //     if (hierarchies[i] === OBJECT_FQN) {
+        //         continue;
+        //     }
 
-            const newEdge = { name: hierarchies[i], parent: hierarchies[i + 1] };
-            hierarchyMap.set(newEdge.name + newEdge.parent, newEdge);
-        }
+        //     const newEdge = { name: hierarchies[i], parent: hierarchies[i + 1] };
+        //     hierarchyMap.set(newEdge.name + newEdge.parent, newEdge);
+        // }
 
 
-        const classHierarchyJson = [...hierarchyMap.values()];
+        const classHierarchyJson = hierarchies;
+
 
         var classHierarchy = d3.stratify()
             .id(d => d.name)
@@ -119,19 +120,28 @@
 
         // create the adjacency matrix use a map to make the mapping between the name of the classes and their indexes
         const leavesMap = new Map();
-        leaves.forEach((l, i) => leavesMap.set(l.id, i));
+        leaves.forEach((l, i) => {
+            // init list of paths that will be populated later
+            l.paths = [];
+            // map name of leaf to its index
+            leavesMap.set(l.id, i);
+        });
         const adjacencyMatrix = new Array(leaves.length).fill().map(() => new Array(leaves.length).fill(0));
 
+        // use the mapping from name to index to populate the adjacency matrix
         for (k of pairClientsCount.keys()) {
             const i = leavesMap.get(k);
             const kMap = pairClientsCount.get(k);
             for (p of kMap.keys()) {
                 const j = leavesMap.get(p);
-                adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
+                if (i !== undefined && j != undefined) {
+                    adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
+                    console.log(i, j, k, p, kMap.get(p));
+                }
             }
         }
 
-        const RADIUS = 400;
+        // import * as d3 from "d3"
 
         const ARC_THICKNESS = 15;
 
@@ -143,18 +153,14 @@
 
         leaves.forEach((l, idx) => l.idx = idx);
 
+        const RADIUS = WIDTH * 0.2;
+
         const svg = d3.select("#chart")
             .append("svg")
             .attr("width", WIDTH)
             .attr("height", HEIGHT)
             .append("g")
             .attr("transform", `translate(${WIDTH / 2}, ${HEIGHT / 2})`);
-
-
-        const chord = d3.chord()
-            // .sortSubgroups(d3.ascending)
-            (adjacencyMatrix)
-
 
         /* DRAW ARCS */
 
@@ -246,6 +252,26 @@
             localStorage.setItem("lastClickedArc", datum.data.name);
         }
 
+        const cluster = d3.cluster()
+            .size([360, RADIUS]);
+
+        cluster(classHierarchy);
+
+        const angleAmount = 2 * Math.PI / leaves.length;
+
+        leaves.forEach(
+            (leaf, idx) => {
+                leaf.startAngle = idx * angleAmount;
+                leaf.endAngle = (idx + 1) * angleAmount;
+            }
+        )
+
+        leaves.forEach(
+            (leaf) => {
+                leaf.x = ((leaf.startAngle + leaf.endAngle) / 2) * (180 / Math.PI);
+            }
+        )
+
         const arcs = svg.append("g");
 
         const arcsColorScale = d3.scaleSequential()
@@ -254,7 +280,7 @@
 
         const drawArcs = function (tree, chord, color) {
             // use bfs to draw arcs for the provided hierarchy
-            updateAngles(chord.groups);
+            updateAngles(chord);
 
             let q = [];
             tree.visited = true;
@@ -297,21 +323,9 @@
             }
         }
 
-        classHierarchy.children.forEach((c, idx) => drawArcs(c, chord, arcsColorScale(idx)))
+        classHierarchy.children.forEach((c, idx) => drawArcs(c, leaves, arcsColorScale(idx)))
 
         /* DRAW EDGES */
-
-        const cluster = d3.cluster()
-            .size([360, RADIUS]);
-
-        cluster(classHierarchy);
-
-        leaves.forEach(
-            (leaf, idx) => {
-                const group = chord.groups[idx];
-                leaf.x = ((group.startAngle + group.endAngle) / 2) * (180 / Math.PI);
-            }
-        )
 
         leaves.forEach(l => l.data.imports = adjacencyList.get(l.id));
         const line = d3.lineRadial()
@@ -319,7 +333,9 @@
             .radius(function (d) { return d.y; })
             .angle(function (d) { return d.x / 180 * Math.PI; });
 
+        // TODO: change from adjacencyMatrix
         const weightExtend = d3.extent(adjacencyMatrix.flatMap(r => r));
+        weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.05;
 
         const linksColorScale = d3.scaleSequential()
             .domain(weightExtend)
@@ -335,10 +351,7 @@
             .append("path")
             .each(function (d) {
                 d.source = d[0];
-                d.source.paths = [];
-
                 d.target = d[d.length - 1];
-                d.target.paths = [];
             })
             .attr("d", line)
             .each(function (d) {
@@ -347,7 +360,8 @@
             })
             .attr("fill", "none")
             .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
-            .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
+            .style("stroke-width", 0.5);
+        // .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
         // Return a list of imports for the given array of nodes.
         function constructClassLinks(nodes) {
@@ -360,13 +374,16 @@
 
             // For each import, construct a link from the source to target node.
             nodes.forEach(function (d) {
-                if (d.data.imports) d.data.imports.forEach(function (i) {
-                    imports.push(map[d.data.name].path(map[i]));
-                });
+                if (d.data.imports) {
+                    d.data.imports.forEach(function (i) {
+                        imports.push(map[d.data.name].path(map[i]));
+                    });
+                }
             });
 
             return imports;
         }
+
 
     </script>
 
