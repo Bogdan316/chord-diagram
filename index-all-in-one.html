@@ -19,7 +19,7 @@
         position: relative;
     }
 
-    .tooltip {
+    .arc-tooltip {
         font-size: 0.7em;
         opacity: 0;
         position: absolute;
@@ -27,7 +27,7 @@
         left: 0;
         padding: 0.6em 1em;
         background: #000;
-        text-align: center;
+        text-align: left;
         border: 1px solid #000;
         border-radius: 0.5em;
         z-index: 10;
@@ -35,11 +35,6 @@
         pointer-events: none;
         color: #ffff;
         opacity: 0.75;
-    }
-
-    .tooltip-range {
-        margin-bottom: 0.2em;
-        font-weight: 600;
     }
 
     .arc {
@@ -50,20 +45,27 @@
         filter: opacity(1);
         transition-duration: 0.45s;
     }
+
+    .tooltip-text {
+        overflow-y: auto;
+        max-height: 50px;
+        display: block;
+    }
 </style>
 
 <body>
 
     <div id="chart">
 
-        <div id="tooltip" class="tooltip">
-            <span id="class-name"></span>
+        <div id="tooltip" class="arc-tooltip">
+            <span id="class-name" class="tooltip-text"></span>
         </div>
 
     </div>
 
     <script type="text/javascript" src="pairs.js"></script>
     <script type="text/javascript" src="hierarchies.js"></script>
+    <script type="text/javascript" src="clients.js"></script>
     <script type="text/javascript">
         const OBJECT_FQN = "java.lang.Object";
 
@@ -136,9 +138,15 @@
                 const j = leavesMap.get(p);
                 if (i !== undefined && j != undefined) {
                     adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
-                    console.log(i, j, k, p, kMap.get(p));
                 }
             }
+        }
+
+
+        const clientsMap = new Map();
+
+        for (pair of Object.keys(clients)) {
+            clientsMap.set(pair, "<br/>" + clients[pair].join("<br/>"));
         }
 
         // import * as d3 from "d3"
@@ -150,6 +158,8 @@
         const HEIGHT = window.innerHeight;
 
         const tooltip = d3.select("#tooltip");
+        tooltip.focus = false;
+        const tooltipTextDOM = document.querySelector("#class-name");
 
         leaves.forEach((l, idx) => l.idx = idx);
 
@@ -197,6 +207,9 @@
 
         // center and display tooltip on mouse hover
         function onMouseEneter(event, datum) {
+            if (tooltip.focus) {
+                return;
+            }
             tooltip.select("#class-name").text(datum.data.name);
 
             // the circle starts from the top not from the right, the equations need to be adjusted
@@ -212,6 +225,9 @@
 
         // hide tooltip
         function onMouseLeave(event, datum) {
+            if (tooltip.focus) {
+                return;
+            }
             tooltip.style("opacity", 0);
         }
 
@@ -237,7 +253,7 @@
                 }
 
                 let newStroke = "darkgrey";
-                let newOpacity = 0.2
+                let newOpacity = 0;
 
                 if (p.style.stroke == newStroke && lastArc === datum.data.name) {
                     newStroke = p.oldStroke;
@@ -335,7 +351,7 @@
 
         // TODO: change from adjacencyMatrix
         const weightExtend = d3.extent(adjacencyMatrix.flatMap(r => r));
-        weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.05;
+        weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.3;
 
         const linksColorScale = d3.scaleSequential()
             .domain(weightExtend)
@@ -344,6 +360,36 @@
         const linksWidthScale = d3.scaleLinear()
             .domain(weightExtend)
             .range([1, 5]);
+
+        function onMouseEnterLink(event, datum) {
+            if (tooltip.focus) {
+                return;
+            }
+            // skip disabled links
+            if (event.target.style.opacity === "0") {
+                return;
+            }
+            const source = datum.source.id;
+            const target = datum.target.id;
+            const pairKey = source + target;
+            const tooltipText = `${source.slice(source.lastIndexOf(".") + 1)} \u2194 ${target.slice(target.lastIndexOf(".") + 1)}`;
+
+            tooltip.select("#class-name").html(tooltipText + ":" + clientsMap.get(pairKey));
+            tooltip.style("transform", `translate(${event.x}px, ${event.y}px)`);
+            tooltip.style("opacity", 1);
+        }
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code == "F2" && tooltip.style("opacity") === "1") {
+                tooltip.focus = !tooltip.focus;
+                // make tooltip scrollable when in focus
+                const pointerEvent = tooltip.style("pointer-events") == "auto" ? "none" : "auto";
+                tooltip.style("pointer-events", pointerEvent);
+                // reset scrollbar position
+                tooltipTextDOM.scrollTop = 0;
+            }
+        });
+
 
         const link = svg.append("g").selectAll("g")
             .data(constructClassLinks(leaves))
@@ -360,7 +406,9 @@
             })
             .attr("fill", "none")
             .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
-            .style("stroke-width", 0.5);
+            .style("stroke-width", 0.8)
+            .on("mouseenter", onMouseEnterLink)
+            .on("mouseleave", onMouseLeave);
         // .style("stroke-width", d => linksWidthScale(adjacencyMatrix[d.source.idx][d.target.idx]));
 
         // Return a list of imports for the given array of nodes.
@@ -383,8 +431,6 @@
 
             return imports;
         }
-
-
     </script>
 
 </body>

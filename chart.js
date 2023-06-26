@@ -56,7 +56,7 @@ const updateAngles = function (groups) {
 
 // center and display tooltip on mouse hover
 function onMouseEneter(event, datum) {
-    if(tooltip.focus){
+    if (tooltip.focus) {
         return;
     }
     tooltip.select("#class-name").text(datum.data.name);
@@ -74,7 +74,7 @@ function onMouseEneter(event, datum) {
 
 // hide tooltip
 function onMouseLeave(event, datum) {
-    if(tooltip.focus){
+    if (tooltip.focus) {
         return;
     }
     tooltip.style("opacity", 0);
@@ -211,7 +211,7 @@ const linksWidthScale = d3.scaleLinear()
     .range([1, 5]);
 
 function onMouseEnterLink(event, datum) {
-    if(tooltip.focus){
+    if (tooltip.focus) {
         return;
     }
     // skip disabled links
@@ -220,18 +220,20 @@ function onMouseEnterLink(event, datum) {
     }
     const source = datum.source.id;
     const target = datum.target.id;
+    // the order of the pairs in the key is alphabetical
+    const pairKey = [source, target].sort().join("");
     const tooltipText = `${source.slice(source.lastIndexOf(".") + 1)} \u2194 ${target.slice(target.lastIndexOf(".") + 1)}`;
 
-    tooltip.select("#class-name").html(tooltipText + "<br>Hello there<br/>abc<br/>def<br/>ghi<br/>jkl<br/>");
+    tooltip.select("#class-name").html(tooltipText + ":" + clientsMap.get(pairKey));
     tooltip.style("transform", `translate(${event.x}px, ${event.y}px)`);
     tooltip.style("opacity", 1);
 }
 
 document.addEventListener('keyup', (e) => {
-    if(e.code == "F2" && tooltip.style("opacity") === "1"){
+    if (e.code == "F2" && tooltip.style("opacity") === "1") {
         tooltip.focus = !tooltip.focus;
         // make tooltip scrollable when in focus
-        const pointerEvent = tooltip.style("pointer-events") == "auto" ? "none": "auto";
+        const pointerEvent = tooltip.style("pointer-events") == "auto" ? "none" : "auto";
         tooltip.style("pointer-events", pointerEvent);
         // reset scrollbar position
         tooltipTextDOM.scrollTop = 0;

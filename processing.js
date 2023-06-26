@@ -72,3 +72,10 @@ for (k of pairClientsCount.keys()) {
         }
     }
 }
+
+
+const clientsMap = new Map();
+
+for(pair of Object.keys(clients)){
+    clientsMap.set(pair, "<br/>" + clients[pair].join("<br/>"));
+}
