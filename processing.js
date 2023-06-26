@@ -69,9 +69,6 @@ for (k of pairClientsCount.keys()) {
         const j = leavesMap.get(p);
         if (i !== undefined && j != undefined){
             adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
-            console.log(i, j, k, p, kMap.get(p));
         }
     }
 }
-
-console.log(pairClientsCount);
