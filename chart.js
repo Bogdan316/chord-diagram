@@ -199,8 +199,9 @@ const line = d3.lineRadial()
     .angle(function (d) { return d.x / 180 * Math.PI; });
 
 // TODO: change from adjacencyMatrix
-const weightExtend = d3.extent(adjacencyMatrix.flatMap(r => r));
-weightExtend[0] = weightExtend[0] - (weightExtend[1] - weightExtend[0]) * 0.3;
+const weightExtend = d3.extent(Object.values(pairs));
+weightExtend[0] = weightExtend[0] - weightExtend[1] * 0.3;
+console.log(weightExtend);
 
 const linksColorScale = d3.scaleSequential()
     .domain(weightExtend)
@@ -240,7 +241,6 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-
 const link = svg.append("g").selectAll("g")
     .data(constructClassLinks(leaves))
     .enter()
@@ -255,7 +255,11 @@ const link = svg.append("g").selectAll("g")
         d.target.paths.push(this);
     })
     .attr("fill", "none")
-    .style("stroke", d => linksColorScale(adjacencyMatrix[d.source.idx][d.target.idx]))
+    .style("stroke", d => {
+        const key = [d.source.id, d.target.id].sort().join("|");
+        console.log(pairs[key]);
+        return linksColorScale(pairs[key]);
+    })
     .style("stroke-width", 0.8)
     .on("mouseenter", onMouseEnterLink)
     .on("mouseleave", onMouseLeave);

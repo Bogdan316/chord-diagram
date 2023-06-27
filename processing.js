@@ -3,8 +3,8 @@ const OBJECT_FQN = "java.lang.Object";
 const adjacencyList = new Map();
 const pairClientsCount = new Map();
 
-pairs.forEach(p => {
-    const p0 = p[0], p1 = p[1];
+for(pairFQNs of Object.keys(pairs)){
+    const [p0, p1] = pairFQNs.split("|");
 
     // create adjacency list from list of pairs
     if (!adjacencyList.has(p0)) {
@@ -20,29 +20,11 @@ pairs.forEach(p => {
 
     const p0Map = pairClientsCount.get(p0)
     if (!p0Map.has(p1)) {
-        p0Map.set(p1, 0);
+        p0Map.set(p1, pairs[pairFQNs]);
     }
-
-    p0Map.set(p1, p0Map.get(p1) + 1);
-});
-
-// format the list of classes such that d3.stratify() can create a hierarchy
-// and remove all the duplicated objects, stratify does not support duplicates
-// const hierarchyMap = new Map();
-// hierarchyMap.set(OBJECT_FQN, { name: OBJECT_FQN, parent: "" });
-
-// for (i = 0; i < hierarchies.length - 1; i++) {
-//     if (hierarchies[i] === OBJECT_FQN) {
-//         continue;
-//     }
-
-//     const newEdge = { name: hierarchies[i], parent: hierarchies[i + 1] };
-//     hierarchyMap.set(newEdge.name + newEdge.parent, newEdge);
-// }
-
+}
 
 const classHierarchyJson = hierarchies;
-
 
 var classHierarchy = d3.stratify()
     .id(d => d.name)
@@ -59,20 +41,6 @@ leaves.forEach((l, i) => {
     // map name of leaf to its index
     leavesMap.set(l.id, i);
 });
-const adjacencyMatrix = new Array(leaves.length).fill().map(() => new Array(leaves.length).fill(0));
-
-// use the mapping from name to index to populate the adjacency matrix
-for (k of pairClientsCount.keys()) {
-    const i = leavesMap.get(k);
-    const kMap = pairClientsCount.get(k);
-    for (p of kMap.keys()) {
-        const j = leavesMap.get(p);
-        if (i !== undefined && j != undefined){
-            adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = kMap.get(p);
-        }
-    }
-}
-
 
 const clientsMap = new Map();
 
