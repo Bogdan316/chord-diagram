@@ -97,7 +97,7 @@ function onMouseDown(event, datum) {
     });
 
     otherPaths.forEach(p => {
-        if (!p.oldStroke) {
+        if (p.oldStroke === undefined) {
             p.oldStroke = p.style.stroke;
         }
 
