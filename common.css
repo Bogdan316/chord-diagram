@@ -39,3 +39,13 @@ body {
     max-height: 50px;
     display: block;
 }
+
+#diagramtitle {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#diagramtitle {
+    z-index: 10;
+}

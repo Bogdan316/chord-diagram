@@ -3,7 +3,7 @@ const OBJECT_FQN = "java.lang.Object";
 const adjacencyList = new Map();
 const pairClientsCount = new Map();
 
-for(pairFQNs of Object.keys(pairs)){
+for (pairFQNs of Object.keys(pairs)) {
     const [p0, p1] = pairFQNs.split("|");
 
     // create adjacency list from list of pairs
@@ -44,6 +44,18 @@ leaves.forEach((l, i) => {
 
 const clientsMap = new Map();
 
-for(pair of Object.keys(clients)){
-    clientsMap.set(pair, "<br/>" + clients[pair].join("<br/>"));
+let i = 0;
+
+for (pair of Object.keys(clients)) {
+    const formattedNames = clients[pair].map(c => {
+        let [projectName, fqn] = c.split("/")
+        const nameParts = fqn.split(".");
+        const newName = projectName + "/" + nameParts
+            .slice(0, nameParts.length - 1)
+            .map(s => s.charAt(0))
+            .join(".") + "." + nameParts[nameParts.length - 1]
+        return newName;
+    });
+
+    clientsMap.set(pair, "<br/>" + formattedNames.join("<br/>"));
 }

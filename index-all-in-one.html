@@ -51,6 +51,16 @@
         max-height: 50px;
         display: block;
     }
+
+    #diagramtitle {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    #diagramtitle {
+        z-index: 10;
+    }
 </style>
 
 <body>
@@ -113,8 +123,20 @@
 
         const clientsMap = new Map();
 
+        let i = 0;
+
         for (pair of Object.keys(clients)) {
-            clientsMap.set(pair, "<br/>" + clients[pair].join("<br/>"));
+            const formattedNames = clients[pair].map(c => {
+                let [projectName, fqn] = c.split("/")
+                const nameParts = fqn.split(".");
+                const newName = projectName + "/" + nameParts
+                    .slice(0, nameParts.length - 1)
+                    .map(s => s.charAt(0))
+                    .join(".") + "." + nameParts[nameParts.length - 1]
+                return newName;
+            });
+
+            clientsMap.set(pair, "<br/>" + formattedNames.join("<br/>"));
         }
 
         // import * as d3 from "d3"
@@ -208,28 +230,22 @@
             const otherPaths = new Set(leaves.flatMap(l => l.paths).filter(p => !paths.includes(p)));
 
             paths.forEach(p => {
-                if (p.oldStroke) {
-                    d3.select(p)
-                        .style("stroke", p.oldStroke)
-                        .style("opacity", 1);
-                }
+                d3.select(p)
+                    .attr("pointer-events", "auto")
+                    .style("opacity", 1);
             });
 
             otherPaths.forEach(p => {
-                if (!p.oldStroke) {
-                    p.oldStroke = p.style.stroke;
-                }
-
-                let newStroke = "darkgrey";
                 let newOpacity = 0;
+                let newPointerEvent = "none";
 
-                if (p.style.stroke == newStroke && lastArc === datum.data.name) {
-                    newStroke = p.oldStroke;
+                if (p.style.opacity == newOpacity && lastArc === datum.data.name) {
+                    newPointerEvent = "auto";
                     newOpacity = 1;
                 }
 
                 d3.select(p)
-                    .style("stroke", newStroke)
+                    .attr("pointer-events", newPointerEvent)
                     .style("opacity", newOpacity);
             });
 
@@ -320,7 +336,6 @@
         // TODO: change from adjacencyMatrix
         const weightExtend = d3.extent(Object.values(pairs));
         weightExtend[0] = weightExtend[0] - weightExtend[1] * 0.3;
-        console.log(weightExtend);
 
         const linksColorScale = d3.scaleSequential()
             .domain(weightExtend)
@@ -376,7 +391,6 @@
             .attr("fill", "none")
             .style("stroke", d => {
                 const key = [d.source.id, d.target.id].sort().join("|");
-                console.log(pairs[key]);
                 return linksColorScale(pairs[key]);
             })
             .style("stroke-width", 0.8)
@@ -404,6 +418,7 @@
 
             return imports;
         }
+
     </script>
 
 </body>

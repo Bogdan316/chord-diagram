@@ -89,28 +89,22 @@ function onMouseDown(event, datum) {
     const otherPaths = new Set(leaves.flatMap(l => l.paths).filter(p => !paths.includes(p)));
 
     paths.forEach(p => {
-        if (p.oldStroke) {
             d3.select(p)
-                .style("stroke", p.oldStroke)
+                .attr("pointer-events", "auto")
                 .style("opacity", 1);
-        }
     });
 
     otherPaths.forEach(p => {
-        if (p.oldStroke === undefined) {
-            p.oldStroke = p.style.stroke;
-        }
-
-        let newStroke = "darkgrey";
         let newOpacity = 0;
+        let newPointerEvent = "none";
 
-        if (p.style.stroke == newStroke && lastArc === datum.data.name) {
-            newStroke = p.oldStroke;
+        if (p.style.opacity == newOpacity && lastArc === datum.data.name) {
+            newPointerEvent = "auto";
             newOpacity = 1;
         }
 
         d3.select(p)
-            .style("stroke", newStroke)
+            .attr("pointer-events", newPointerEvent)
             .style("opacity", newOpacity);
     });
 
@@ -201,7 +195,6 @@ const line = d3.lineRadial()
 // TODO: change from adjacencyMatrix
 const weightExtend = d3.extent(Object.values(pairs));
 weightExtend[0] = weightExtend[0] - weightExtend[1] * 0.3;
-console.log(weightExtend);
 
 const linksColorScale = d3.scaleSequential()
     .domain(weightExtend)
@@ -257,7 +250,6 @@ const link = svg.append("g").selectAll("g")
     .attr("fill", "none")
     .style("stroke", d => {
         const key = [d.source.id, d.target.id].sort().join("|");
-        console.log(pairs[key]);
         return linksColorScale(pairs[key]);
     })
     .style("stroke-width", 0.8)
